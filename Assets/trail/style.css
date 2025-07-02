@@ -1,0 +1,24 @@
+/* Container fills the viewport */
+#pixel-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none; /* Don't block interactions */
+    overflow: hidden;
+    z-index: 9999;
+  }
+  
+  /* Style for each pixel dot */
+  .pixel-dot {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #00d4ff;  /* Customize color */
+    border-radius: 50%;
+    opacity: 0.8;
+    will-change: transform, opacity;
+    pointer-events: none;
+  }
+  

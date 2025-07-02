@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANA - Heavenly Ice Cream Delights</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/gl-matrix-min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+    <style>
+        /* Background aesthetic lines effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1)),
+                linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1));
+            background-size: 20px 20px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        /* Pixel Cursor Trail */
+        #pixel-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 9999;
+        }       
+
+        .pixel-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #00d4ff;
+            border-radius: 50%;
+            opacity: 0.8;
+            will-change: transform, opacity;
+            pointer-events: none;
+        }
+
+
+        /* Custom cursor */
+        .cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: rgba(255, 192, 203, 0.7);
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: multiply;
+            transform: translate(-50%, -50%);
+            transition: transform 0.2s ease;
+        }
+        
+        .cursor-follower {
+            position: fixed;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: rgba(255, 105, 180, 0.5);
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: transform 0.4s ease, width 0.4s ease, height 0.4s ease;
+        }
+        
+        /* 3D card effect */
+        .icecream-card {
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        
+        .icecream-card:hover {
+            transform: translateY(-10px) rotateY(5deg);
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Flavor transition animation */
+        @keyframes flavorTransition {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-50px) rotate(5deg); opacity: 0; }
+            100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        }
+        
+        .flavor-transition {
+            animation: flavorTransition 1.5s ease-in-out;
+        }
+        
+        /* Feedback form styling */
+        .feedback-form {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,236,245,0.9) 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #e0f7fa;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(#ff9a9e, #fad0c4);
+            border-radius: 10px;
+        }
+        
+        /* Price overlay */
+        .price-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .icecream-card:hover .price-overlay {
+            opacity: 1;
+        }
+
+        
+        /* Floating animation for ice cream scoops */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .floating {
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        .floating-delay-1 {
+            animation-delay: 0.5s;
+        }
+        
+        .floating-delay-2 {
+            animation-delay: 1s;
+        }
+        
+        .floating-delay-3 {
+            animation-delay: 1.5s;
+        }
+
+        /* Modal animation */
+        .modal-visible {
+            transform: scale(1) !important;
+            opacity: 1 !important;
+        }
+
+        /* Continuous sliding loop animation */
+        @keyframes continuousSlide {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .shop-image-container {
+            width: 400px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .shop-image-strip {
+            display: flex;
+            width: 2400px;
+            height: 100%;
+            animation: continuousSlide 12s linear infinite;
+        }
+
+        .shop-image-strip img {
+            width: 400px;
+            height: 400px;
+            object-fit: fill;
+            flex-shrink: 0;
+        }
+
+        .shop-scroll-animation-fourth {
+            animation: shopScrollInfinite 5s linear infinite;
+            animation-delay: 5s;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body class="font-sans overflow-x-hidden" style="background: url('Assets/images/anabbgg.png') no-repeat center top; background-size: 1700px 815px; background-color: #00e1ff;">
+    <!-- Custom cursor elements -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+    <!-- PIXEL TRAIL EFFECT -->
+    <div id="pixel-container"></div>
+
+    
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-cyan-100 bg-opacity-90 shadow-sm">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="Assets/images/anabbg.png" alt="ANA" class="w-10 h-10 object-cover rounded-full shadow-md">
+                <span class="ml-2 text-sm text-gray-600 italic">"Melting Hearts, One Scoop at a Time"</span>
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <button id="cartButton" class="relative text-gray-700 hover:text-pink-600 transition">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cartCount" class="absolute -top-2 -right-2 bg-pink-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </button>
+                <a href="#home" class="text-pink-600 hover:text-purple-600 transition">Home</a>
+                <a href="#flavors" class="text-gray-700 hover:text-purple-600 transition">Our Unique Flavors</a>
+                <a href="#about" class="text-gray-700 hover:text-purple-600 transition">Our Story</a>
+                <a href="#feedback" class="text-gray-700 hover:text-purple-600 transition">Customer Love</a>
+                <a href="#shop" class="text-gray-700 hover:text-purple-600 transition">Our Shop</a>
+            </div>
+            <button class="md:hidden text-gray-700 focus:outline-none">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center relative overflow-hidden pt-20 bg-black bg-opacity-20">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-64 h-64 rounded-full bg-pink-200 opacity-30 filter blur-3xl"></div>
+            <div class="w-96 h-96 rounded-full bg-purple-200 opacity-30 filter blur-3xl ml-40 mt-40"></div>
+        </div>
+        
+        <div class="container mx-auto px-6 flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 text-center md:text-left mb-10 md:mb-0">
+                <h1 class="text-5xl md:text-6xl font-bold text-pink-600 mb-6">Discover ANA's</h1>
+                <h2 class="text-4xl md:text-5xl font-bold text-purple-600 mb-6">Exotic Ice Cream Flavors</h2>
+                <p class="text-lg text-white mb-8 max-w-lg">Experience the extraordinary with our handcrafted, unique flavors you won't find anywhere else. Each scoop is a journey to flavor paradise.</p>
+                <button class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                    Explore Flavors
+                </button>
+            </div>
+            
+            <div class="md:w-1/2 relative">
+                <div class="relative w-full max-w-md mx-auto">
+                    <div class="absolute -top-20 -left-20 w-40 h-40 bg-pink-200 rounded-full filter blur-xl opacity-50"></div>
+                    <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-purple-200 rounded-full filter blur-xl opacity-50"></div>
+                    
+                    <div class="relative z-10" style="position: relative; margin-left: 280px; margin-top: -350px;">
+                        <div class="ice-cream-image-container" style="width: 400px; height: 400px; position: relative; overflow: hidden; border-radius: 2rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);">
+                            <div class="ice-cream-image-strip" style="display: flex; width: 4000px; height: 100%; animation: continuousSlide 25s linear infinite;">
+                                <img src="Assets/images/kunafa poster.png" alt="Chocolate ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/mango poster.png" alt="Mango ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/matcha poster.png" alt="Matcha ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/rose poster.png" alt="Rose ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/lavender poster.png" alt="Lavender ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <!-- Duplicate images for seamless loop -->
+                                <img src="Assets/images/kunafa poster.png" alt="Chocolate ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/mango poster.png" alt="Mango ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/matcha poster.png" alt="Matcha ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/rose poster.png" alt="Rose ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                                <img src="Assets/images/lavender poster.png" alt="Lavender ice cream" style="width: 400px; height: 400px; object-fit: full; flex-shrink: 0; transform: rotate(3deg);">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-10 left-0 right-0 flex justify-center">
+            <a href="#flavors" class="text-pink-600 animate-bounce">
+                <i class="fas fa-chevron-down text-3xl"></i>
+            </a>
+        </div>
+    </section>
+    
+    <!-- Flavors Section -->
+    <section id="flavors" class="py-20 bg-cyan-50 bg-opacity-90">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-pink-600 mb-4">Our Unique Flavors</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-6">Discover flavors that will transport your taste buds to new dimensions of delight.</p>
+                <button id="addAllToCart" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                    <i class="fas fa-cart-plus mr-2"></i>Add All Flavors to Cart
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Flavor 1 -->
+                <div class="icecream-card bg-cyan-100 rounded-2xl p-6 shadow-lg relative overflow-hidden transition-all duration-500 hover:shadow-xl cursor-pointer">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-pink-100 rounded-full opacity-30"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-center mb-6">
+                            <img src="Assets/images/kunafa chocolate.png" alt="Kunafa Chocolate Ice Cream" class="w-40 h-40 object-cover rounded-full shadow-md floating"> 
+                        </div>
+                        <h3 class="text-2xl font-bold text-center text-purple-700 mb-2">Kunafa Chocolate</h3>
+                        <p class="text-gray-600 text-center mb-1">A Middle Eastern delight combining crispy kunafa pastry with rich chocolate ganache.</p>
+                        <p class="text-center font-bold text-pink-600 mb-4">12.50 <span style="font-weight: bold; position: relative; display: inline-block;">
+                            D
+                            <span style="position: absolute; top: 30%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                            <span style="position: absolute; top: 60%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                          </span>
+                          </p>
+                        <div class="flex justify-center items-center space-x-2">
+                            <span class="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm font-medium">Best Seller</span>
+                            <button class="add-to-cart bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors" data-flavor="Kunafa Chocolate" data-price="12.50">
+                                <i class="fas fa-cart-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Flavor 2 -->
+                <div class="icecream-card bg-white rounded-2xl p-6 shadow-lg relative overflow-hidden transition-all duration-500 hover:shadow-xl">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-100 rounded-full opacity-30"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-center mb-6">
+                            <img src="Assets/images/Mango Pistachio Delight.png" alt="Mango Pistachio Delight Ice Cream" class="w-40 h-40 object-cover rounded-full shadow-md floating"> 
+                        </div>
+                        <h3 class="text-2xl font-bold text-center text-yellow-700 mb-2">Mango Pistachio Delight</h3>
+                        <p class="text-gray-600 text-center mb-1">Thai-inspired flavor with sweet mango, coconut milk, and glutinous rice essence.</p>
+                        <p class="text-center font-bold text-yellow-600 mb-4">12.50 <span style="font-weight: bold; position: relative; display: inline-block;">
+                            D
+                            <span style="position: absolute; top: 30%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                            <span style="position: absolute; top: 60%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                          </span>
+                          </p></p>
+                        <div class="flex justify-center items-center space-x-2">
+                            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">Tropical</span>
+                            <button class="add-to-cart bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors" data-flavor="Mango Sticky Rice" data-price="12.50">
+                                <i class="fas fa-cart-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Flavor 3 -->
+                <div class="icecream-card bg-white rounded-2xl p-6 shadow-lg relative overflow-hidden transition-all duration-500 hover:shadow-xl">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-100 rounded-full opacity-30"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-center mb-6">
+                            <img src="Assets/images/Matcha Black Sesame Ice Cream.png" alt="Matcha Black Sesame" class="w-40 h-40 object-cover rounded-full shadow-md floating">
+                        </div>
+                        <h3 class="text-2xl font-bold text-center text-green-700 mb-2">Matcha Black Sesame</h3>
+                        <p class="text-gray-600 text-center mb-1">Japanese fusion of earthy matcha with nutty black sesame for a sophisticated taste.</p>
+                        <p class="text-center font-bold text-green-600 mb-4">12.50 <span style="font-weight: bold; position: relative; display: inline-block;">
+                            D
+                            <span style="position: absolute; top: 30%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                            <span style="position: absolute; top: 60%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                          </span>
+                          </p></p>
+                        <div class="flex justify-center items-center space-x-2">
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Zen</span>
+                            <button class="add-to-cart bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors" data-flavor="Matcha Black Sesame" data-price="12.50">
+                                <i class="fas fa-cart-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Flavor 4 -->
+                <div class="icecream-card bg-white rounded-2xl p-6 shadow-lg relative overflow-hidden transition-all duration-500 hover:shadow-xl">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-100 rounded-full opacity-30"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-center mb-6">
+                            <img src="Assets/images/Rose Pistachio Delight.png" alt="Rose Pistachio Delight" class="w-40 h-40 object-cover rounded-full shadow-md floating">
+                        </div>
+                        <h3 class="text-2xl font-bold text-center text-red-700 mb-2">Rose Pistachio Delight</h3>
+                        <p class="text-gray-600 text-center mb-1">Persian-inspired floral rose water with crunchy pistachios in a creamy base.</p>
+                        <p class="text-center font-bold text-red-600 mb-4">12.50 <span style="font-weight: bold; position: relative; display: inline-block;">
+                            D
+                            <span style="position: absolute; top: 30%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                            <span style="position: absolute; top: 60%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                          </span>
+                          </p></p>
+                        <div class="flex justify-center items-center space-x-2">
+                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">Exotic</span>
+                            <button class="add-to-cart bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors" data-flavor="Rose Pistachio Delight" data-price="12.50">
+                                <i class="fas fa-cart-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Flavor 5 -->
+                <div class="icecream-card bg-white rounded-2xl p-6 shadow-lg relative overflow-hidden transition-all duration-500 hover:shadow-xl md:col-span-2 lg:col-span-1">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-100 rounded-full opacity-30"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-center mb-6">
+                            <img src="Assets/images/Blue Lavender Honey Ice Cream.png" alt="Blue Lavender Honey Ice Cream" class="w-40 h-40 object-cover rounded-full shadow-md floating"> 
+                        </div>
+                        <h3 class="text-2xl font-bold text-center text-blue-700 mb-2">Blue Lavender Honey</h3>
+                        <p class="text-gray-600 text-center mb-1">Provence lavender infused with wildflower honey in a dreamy blue vanilla base.</p>
+                        <p class="text-center font-bold text-blue-600 mb-4">12.50 <span style="font-weight: bold; position: relative; display: inline-block;">
+                            D
+                            <span style="position: absolute; top: 30%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                            <span style="position: absolute; top: 60%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                          </span>
+                          </p>
+                        <div class="flex justify-center items-center space-x-2">
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Floral</span>
+                            <button class="add-to-cart bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors" data-flavor="Blue Lavender Honey" data-price="12.50">
+                                <i class="fas fa-cart-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-16 text-center">
+                <button id="transitionFlavors" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                    Experience Flavor Transition
+                </button>
+            </div>
+        </div>
+    </section>
+    
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-cyan-50 bg-opacity-90">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <div class="relative">
+                        <div class="absolute -top-10 -left-10 w-64 h-64 bg-pink-100 rounded-full opacity-30 filter blur-xl"></div>
+                        <img src="Assets/images/rose poster.png" 
+                             alt="Ice cream making" 
+                             class="relative z-10 rounded-2xl shadow-xl w-full max-w-md mx-auto">
+                    </div>
+                </div>
+                
+                <div class="md:w-1/2 md:pl-12">
+                    <h2 class="text-4xl font-bold text-pink-600 mb-6">Our Story</h2>
+                    <p class="text-lg text-gray-700 mb-6">
+                        ANA was born from a passion to create ice cream experiences unlike any other. Our founder, Ana herself, traveled the world collecting unique flavor inspirations from every corner of the globe.
+                    </p>
+                    <p class="text-lg text-gray-700 mb-6">
+                        Each of our exotic flavors is crafted with premium ingredients and traditional techniques from their country of origin, combined with modern ice cream artistry.
+                    </p>
+                    <p class="text-lg text-gray-700 mb-8">
+                        We believe ice cream should be an adventure, a moment of pure joy that transports you to new places with every spoonful.
+                    </p>
+                    <div class="flex space-x-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
+                                <i class="fas fa-leaf text-xl"></i>
+                            </div>
+                            <span class="ml-3 font-medium">Natural Ingredients</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                <i class="fas fa-globe-americas text-xl"></i>
+                            </div>
+                            <span class="ml-3 font-medium">Global Inspiration</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Feedback Section -->
+    <section id="feedback" class="py-20 bg-cyan-50 bg-opacity-90">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-pink-600 mb-4">Customer Love</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">Hear what our customers say about our exotic flavors</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                <!-- Feedback Form -->
+                <div class="feedback-form p-8 rounded-2xl shadow-lg bg-cyan-100">
+                    <h3 class="text-2xl font-bold text-purple-700 mb-6">Share Your Experience</h3>
+                    <form id="feedbackForm" class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-gray-700 mb-2">Your Name</label>
+                            <input type="text" id="name" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                        </div>
+                        <div>
+                            <label for="flavor" class="block text-gray-700 mb-2">Favorite Flavor</label>
+                            <select id="flavor" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <option value="">Select a flavor</option>
+                                <option value="Kunafa Chocolate">Kunafa Chocolate</option>
+                                <option value="Mango Pistachio Delight">Mango Pistachio Delight</option>
+                                <option value="Matcha Black Sesame">Matcha Black Sesame</option>
+                                <option value="Rose Pistachio Delight">Rose Pistachio Delight</option>
+                                <option value="Blue Lavender Honey">Blue Lavender Honey</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="message" class="block text-gray-700 mb-2">Your Feedback</label>
+                            <textarea id="message" rows="4" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="rating" class="block text-gray-700 mb-2">Rating</label>
+                            <div class="flex space-x-2">
+                                <button type="button" class="rating-star text-2xl" data-rating="1">☆</button>
+                                <button type="button" class="rating-star text-2xl" data-rating="2">☆</button>
+                                <button type="button" class="rating-star text-2xl" data-rating="3">☆</button>
+                                <button type="button" class="rating-star text-2xl" data-rating="4">☆</button>
+                                <button type="button" class="rating-star text-2xl" data-rating="5">☆</button>
+                            </div>
+                            <input type="hidden" id="rating" value="0">
+                        </div>
+                        <button type="submit" class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all w-full">
+                            Submit Feedback
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Feedback Display -->
+                <div class="bg-cyan-100 p-8 rounded-2xl shadow-lg">
+                    <h3 class="text-2xl font-bold text-purple-700 mb-6">Recent Feedback</h3>
+                    <div id="feedbackList" class="space-y-6 max-h-96 overflow-y-auto pr-4">
+                        <!-- Feedback items will be added here dynamically -->
+                        <div class="feedback-item border-b border-gray-100 pb-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-pink-600">Sarah J.</h4>
+                                    <p class="text-sm text-gray-500">Tried: Kunafa Chocolate</p>
+                                </div>
+                                <div class="flex text-yellow-400">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-gray-700">"Absolutely mind-blowing! The combination of crispy kunafa and smooth chocolate is genius. I've never tasted anything like it!"</p>
+                        </div>
+                        
+                        <div class="feedback-item border-b border-gray-100 pb-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-pink-600">Michael T.</h4>
+                                    <p class="text-sm text-gray-500">Tried: Matcha Black Sesame</p>
+                                </div>
+                                <div class="flex text-yellow-400">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-gray-700">"The perfect balance of earthy and nutty flavors. It's like a Japanese tea ceremony in ice cream form!"</p>
+                        </div>
+                        
+                        <div class="feedback-item border-b border-gray-100 pb-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-pink-600">Priya K.</h4>
+                                    <p class="text-sm text-gray-500">Tried: Rose Pistachio Delight</p>
+                                </div>
+                                <div class="flex text-yellow-400">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-gray-700">"This flavor transported me back to my grandmother's kitchen in Iran. The rose water is perfectly balanced with the pistachios."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="shop" class="text-center mt-12">
+                <h3 class="text-3xl font-bold text-pink-600 mb-6">Visit Our Shop</h3>
+                <p class="text-xl text-gray-700 mb-8">Experience our exotic flavors in person</p>
+
+                <!-- Auto-scrolling Images Section -->
+                <div class="flex justify-center mb-8">
+                    <div class="shop-image-container">
+                        <div class="shop-image-strip">
+                            <img src="Assets/images/shop.png" alt="Shop Exterior">
+                            <img src="Assets/images/insideshop.png" alt="Shop Interior">
+                            <img src="Assets/images/instore.png" alt="Store Interior">
+                            <img src="Assets/images/shop.png" alt="Shop Exterior">
+                            <img src="Assets/images/insideshop.png" alt="Shop Interior">
+                            <img src="Assets/images/instore.png" alt="Store Interior">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shop Information Section -->
+                <div class="max-w-2xl mx-auto bg-cyan-100 rounded-2xl shadow-lg p-8">
+                    <h4 class="text-2xl font-bold text-purple-700 mb-4">ANA Ice Cream</h4>
+                    <p class="text-grey-700 mb-4"><i class="fas fa-map-marker-alt text-pink-500 mr-2"></i> 123 Flavor Avenue, Taste City</p>
+                    <p class="text-grey-700 mb-4"><i class="fas fa-phone text-pink-500 mr-2"></i> (123) 456-7890</p>
+                    <p class="text-grey-700 mb-6"><i class="fas fa-clock text-pink-500 mr-2"></i> Open daily 12pm - 10pm</p>
+                    <button class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all w-full">
+                        Get Directions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="bg-cyan-800 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <img src="Assets/images/anabbg.png" alt="ANA" class="w-20 h-20 object-cover rounded-full shadow-md">
+                    </div>
+                    <p class="text-purple-200">"Melting Hearts, One Scoop at a Time"</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Flavors</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-purple-200 hover:text-white transition">Kunafa Chocolate</a></li>
+                        <li><a href="#" class="text-purple-200 hover:text-white transition">Mango Pistachio Delight</a></li>
+                        <li><a href="#" class="text-purple-200 hover:text-white transition">Matcha Black Sesame</a></li>
+                        <li><a href="#" class="text-purple-200 hover:text-white transition">Rose Pistachio Delight</a></li>
+                        <li><a href="#" class="text-purple-200 hover:text-white transition">Blue Lavender Honey</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#home" class="text-purple-200 hover:text-white transition">Home</a></li>
+                        <li><a href="#flavors" class="text-purple-200 hover:text-white transition">Our Flavors</a></li>
+                        <li><a href="#about" class="text-purple-200 hover:text-white transition">Our Story</a></li>
+                        <li><a href="#feedback" class="text-purple-200 hover:text-white transition">Feedback</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Connect With Us</h4>
+                    <div class="flex space-x-4 mb-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-purple-800 flex items-center justify-center hover:bg-pink-500 transition">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-purple-800 flex items-center justify-center hover:bg-pink-500 transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-purple-800 flex items-center justify-center hover:bg-pink-500 transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
+                    <p class="text-purple-200">Subscribe to our newsletter</p>
+                    <div class="mt-2 flex">
+                        <input type="email" placeholder="Your email" class="px-3 py-2 rounded-l-lg bg-purple-800 text-white focus:outline-none w-full">
+                        <button class="bg-pink-500 text-white px-4 py-2 rounded-r-lg hover:bg-pink-600 transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-purple-800 mt-10 pt-6 text-center text-purple-300">
+                <p>&copy; 2025 ANA Ice Cream. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Shopping Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative transform transition-all duration-300 scale-95 opacity-0 max-h-[80vh] overflow-y-auto">
+            <button id="closeCartModal" class="absolute top-4 right-4 text-gray-500 hover:text-pink-600">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-pink-600 mb-6">Your Cart</h3>
+            <div id="cartItems" class="space-y-4">
+                <!-- Cart items will be added here -->
+            </div>
+            <div class="border-t border-gray-200 pt-4 mt-4">
+                <div class="flex justify-between mb-4">
+                    <span class="font-bold">Total:</span>
+                    <span id="cartTotal" class="font-bold text-pink-600">0.00 <span style="font-weight: bold; position: relative; display: inline-block;">
+                        D
+                        <span style="position: absolute; top: 30%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                        <span style="position: absolute; top: 60%; left: 0; width: 100%; height: 2px; background: black;"></span>
+                      </span>
+                      </span>
+                </div>
+                <button id="checkoutBtn" class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all w-full">
+                    Proceed to Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flavor Details Modal -->
+    <div id="flavorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative transform transition-all duration-300 scale-95 opacity-0">
+            <button id="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-pink-600">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <div class="flex justify-center mb-6">
+                <img id="modalImage" src="" alt="" class="w-40 h-40 object-cover rounded-full shadow-md">
+            </div>
+            <h3 id="modalTitle" class="text-2xl font-bold text-center mb-2"></h3>
+            <p id="modalPrice" class="text-center font-bold text-pink-600 mb-4"></p>
+            <div id="modalIngredients" class="mb-6">
+                <h4 class="font-bold text-gray-700 mb-2">Ingredients:</h4>
+                <ul id="ingredientsList" class="list-disc pl-5 text-gray-600"></ul>
+            </div>
+            <p id="modalDescription" class="text-gray-700 mb-6"></p>
+        </div>
+    </div>
+    
+    <script>
+        // Smooth scroll function
+        function smoothScroll(target) {
+            const element = document.querySelector(target);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Custom cursor
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            setTimeout(() => {
+                cursorFollower.style.left = e.clientX + 'px';
+                cursorFollower.style.top = e.clientY + 'px';
+            }, 100);
+        });
+        
+        document.addEventListener('mouseenter', () => {
+            cursor.style.opacity = '1';
+            cursorFollower.style.opacity = '1';
+        });
+        
+        document.addEventListener('mouseleave', () => {
+            cursor.style.opacity = '0';
+            cursorFollower.style.opacity = '0';
+        });
+        
+        // Add hover effects for interactive elements
+        const interactiveElements = document.querySelectorAll('a, button, .icecream-card, input, textarea, select');
+        
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                cursorFollower.style.transform = 'translate(-50%, -50%) scale(2)';
+            });
+            
+            el.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursorFollower.style.transform = 'translate(-50%, -50%) scale(1)';
+            });
+        });
+        
+        // Flavor details data
+        const flavorData = {
+            "Kunafa Chocolate": {
+                price: "12.50 DHS",
+                ingredients: [
+                    "Fresh kunafa pastry",
+                    "Belgian chocolate ganache",
+                    "Cream cheese ice cream base",
+                    "Orange blossom syrup",
+                    "Crushed pistachios"
+                ],
+                description: "A Middle Eastern delight combining crispy kunafa pastry with rich chocolate ganache."
+            },
+            "Mango Pistachio Delight": {
+                price: "12.50 DHS",
+                ingredients: [
+                    "Thai sweet mango puree",
+                    "Sweetened Condesned Milk base",
+                    "heavy cream",
+                    "pistachios",
+                    "cardamom powder"
+                ],
+                description: "Thai-inspired flavor with sweet mango, coconut milk, and glutinous rice essence."
+            },
+            "Matcha Black Sesame": {
+                price: "12.50 DHS",
+                ingredients: [
+                    "Premium Japanese matcha powder",
+                    "Black sesame paste",
+                    "White chocolate chunks",
+                    "Honeycomb pieces",
+                    "Soy milk base"
+                ],
+                description: "Japanese fusion of earthy matcha with nutty black sesame for a sophisticated taste."
+            },
+            "Rose Pistachio Delight": {
+                price: "12.50 DHS",
+                ingredients: [
+                    "Persian rose water",
+                    "California pistachios",
+                    "Saffron-infused cream",
+                    "Cardamom powder",
+                    "Dried rose petals"
+                ],
+                description: "Persian-inspired floral rose water with crunchy pistachios in a creamy base."
+            },
+            "Blue Lavender Honey": {
+                price: "12.50 DHS",
+                ingredients: [
+                    "Provence lavender extract",
+                    "Wildflower honey",
+                    "Blue spirulina for color",
+                    "Vanilla bean paste",
+                    "Almond brittle pieces"
+                ],
+                description: "Provence lavender infused with wildflower honey in a dreamy blue vanilla base."
+            }
+        };
+
+        // Flavor card click handler
+        const flavorCards = document.querySelectorAll('.icecream-card');
+        const modal = document.getElementById('flavorModal');
+        const modalContent = modal.querySelector('div');
+        
+        flavorCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                // Don't trigger if clicking on a button inside the card
+                if (e.target.tagName === 'BUTTON') return;
+                
+                const flavorName = card.querySelector('h3').textContent;
+                const flavorImg = card.querySelector('img').src;
+                const flavorDesc = card.querySelector('p').textContent;
+                const flavorDataObj = flavorData[flavorName];
+                
+                // Populate modal
+                document.getElementById('modalImage').src = flavorImg;
+                document.getElementById('modalTitle').textContent = flavorName;
+                document.getElementById('modalPrice').textContent = flavorDataObj.price;
+                document.getElementById('modalDescription').textContent = flavorDesc;
+                
+                // Populate ingredients
+                const ingredientsList = document.getElementById('ingredientsList');
+                ingredientsList.innerHTML = '';
+                flavorDataObj.ingredients.forEach(ingredient => {
+                    const li = document.createElement('li');
+                    li.textContent = ingredient;
+                    ingredientsList.appendChild(li);
+                });
+                
+                // Show modal with animation
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalContent.classList.add('modal-visible');
+                }, 10);
+                
+                // Animate the clicked card
+                gsap.from(card, {
+                    duration: 0.5,
+                    scale: 0.95,
+                    ease: "back.out(1.7)"
+                });
+            });
+        });
+        
+        // Close modal
+        document.getElementById('closeModal').addEventListener('click', () => {
+            modalContent.classList.remove('modal-visible');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        });
+        
+        // Rating stars
+        const stars = document.querySelectorAll('.rating-star');
+        const ratingInput = document.getElementById('rating');
+        
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const rating = star.getAttribute('data-rating');
+                ratingInput.value = rating;
+                
+                stars.forEach((s, index) => {
+                    if (index < rating) {
+                        s.textContent = '★';
+                        s.classList.add('text-yellow-400');
+                    } else {
+                        s.textContent = '☆';
+                        s.classList.remove('text-yellow-400');
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseover', () => {
+                const hoverRating = star.getAttribute('data-rating');
+                
+                stars.forEach((s, index) => {
+                    if (index < hoverRating) {
+                        s.classList.add('text-yellow-300');
+                    } else {
+                        s.classList.remove('text-yellow-300');
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseout', () => {
+                const currentRating = ratingInput.value;
+                
+                stars.forEach((s, index) => {
+                    if (index < currentRating) {
+                        s.classList.add('text-yellow-400');
+                    } else {
+                        s.classList.remove('text-yellow-400');
+                    }
+                });
+            });
+        });
+        
+        // Shopping Cart functionality
+        const cart = [];
+        
+        // Add all flavors to cart
+        document.getElementById('addAllToCart').addEventListener('click', () => {
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                const flavor = button.getAttribute('data-flavor');
+                const price = parseFloat(button.getAttribute('data-price'));
+                
+                // Check if item already in cart
+                const existingItem = cart.find(item => item.flavor === flavor);
+                
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({
+                        flavor,
+                        price,
+                        quantity: 1
+                    });
+                }
+                
+                // Show animation for each button
+                gsap.from(button, {
+                    duration: 0.5,
+                    scale: 1.2,
+                    ease: "elastic.out(1, 0.5)"
+                });
+            });
+            
+            updateCart();
+            
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            notification.innerHTML = '<i class="fas fa-check-circle mr-2"></i> All flavors added to cart!';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                gsap.to(notification, {
+                    opacity: 0,
+                    y: -20,
+                    duration: 0.5,
+                    onComplete: () => notification.remove()
+                });
+            }, 3000);
+        });
+        const cartButton = document.getElementById('cartButton');
+        const cartModal = document.getElementById('cartModal');
+        const cartContent = cartModal.querySelector('div');
+        const cartItemsContainer = document.getElementById('cartItems');
+        const cartTotalElement = document.getElementById('cartTotal');
+        const cartCountElement = document.getElementById('cartCount');
+        
+        // Add to cart buttons
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const flavor = button.getAttribute('data-flavor');
+                const price = parseFloat(button.getAttribute('data-price'));
+                
+                // Check if item already in cart
+                const existingItem = cart.find(item => item.flavor === flavor);
+                
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({
+                        flavor,
+                        price,
+                        quantity: 1
+                    });
+                }
+                
+                updateCart();
+                
+                // Show success animation
+                gsap.from(button, {
+                    duration: 0.5,
+                    scale: 1.2,
+                    ease: "elastic.out(1, 0.5)"
+                });
+            });
+        });
+        
+        // Update cart display
+        function updateCart() {
+            // Update cart items
+            cartItemsContainer.innerHTML = '';
+            
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'flex justify-between items-center border-b border-gray-100 pb-2';
+                cartItem.innerHTML = `
+                    <div>
+                        <h4 class="font-medium">${item.flavor}</h4>
+                        <p class="text-sm text-gray-500">${item.price.toFixed(2)} DHS × ${item.quantity}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <button class="decrease-item text-gray-500 hover:text-pink-600 px-2" data-flavor="${item.flavor}">
+                            <i class="fas fa-minus text-xs"></i>
+                        </button>
+                        <span class="mx-1">${item.quantity}</span>
+                        <button class="increase-item text-gray-500 hover:text-pink-600 px-2" data-flavor="${item.flavor}">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                        <button class="remove-item text-gray-500 hover:text-red-600 px-2 ml-2" data-flavor="${item.flavor}">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(cartItem);
+            });
+            
+            // Update total
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            cartTotalElement.textContent = `${total.toFixed(2)} DHS`;
+            
+            // Update cart count
+            const itemCount = cart.reduce((count, item) => count + item.quantity, 0);
+            cartCountElement.textContent = itemCount;
+            
+            if (itemCount > 0) {
+                cartCountElement.classList.remove('hidden');
+            } else {
+                cartCountElement.classList.add('hidden');
+            }
+        }
+        
+        // Cart modal toggle
+        cartButton.addEventListener('click', () => {
+            cartModal.classList.remove('hidden');
+            setTimeout(() => {
+                cartContent.classList.add('modal-visible');
+            }, 10);
+        });
+        
+        // Close cart modal
+        document.getElementById('closeCartModal').addEventListener('click', () => {
+            cartContent.classList.remove('modal-visible');
+            setTimeout(() => {
+                cartModal.classList.add('hidden');
+            }, 300);
+        });
+        
+        // Cart item quantity controls
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.increase-item')) {
+                const flavor = e.target.closest('.increase-item').getAttribute('data-flavor');
+                const item = cart.find(item => item.flavor === flavor);
+                if (item) item.quantity++;
+                updateCart();
+            }
+            
+            if (e.target.closest('.decrease-item')) {
+                const flavor = e.target.closest('.decrease-item').getAttribute('data-flavor');
+                const item = cart.find(item => item.flavor === flavor);
+                if (item && item.quantity > 1) {
+                    item.quantity--;
+                } else {
+                    cart.splice(cart.indexOf(item), 1);
+                }
+                updateCart();
+            }
+            
+            if (e.target.closest('.remove-item')) {
+                const flavor = e.target.closest('.remove-item').getAttribute('data-flavor');
+                const item = cart.find(item => item.flavor === flavor);
+                if (item) {
+                    cart.splice(cart.indexOf(item), 1);
+                }
+                updateCart();
+            }
+        });
+        
+        // Checkout button
+        document.getElementById('checkoutBtn').addEventListener('click', () => {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            
+            // In a real app, this would redirect to checkout page
+            alert(`Order placed! Total: ${cartTotalElement.textContent}`);
+            cart.length = 0;
+            updateCart();
+            cartContent.classList.remove('modal-visible');
+            setTimeout(() => {
+                cartModal.classList.add('hidden');
+            }, 300);
+        });
+
+        // Feedback form submission
+        const feedbackForm = document.getElementById('feedbackForm');
+        const feedbackList = document.getElementById('feedbackList');
+        
+        feedbackForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const flavor = document.getElementById('flavor').value;
+            const message = document.getElementById('message').value;
+            const rating = ratingInput.value;
+            
+            if (!name || !flavor || !message || rating === '0') {
+                alert('Please fill all fields and select a rating');
+                return;
+            }
+            
+            // Create new feedback item
+            const feedbackItem = document.createElement('div');
+            feedbackItem.className = 'feedback-item border-b border-gray-100 pb-4';
+            
+            // Create stars HTML
+            let starsHTML = '';
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 !== 0;
+            
+            for (let i = 0; i < 5; i++) {
+                if (i < fullStars) {
+                    starsHTML += '<i class="fas fa-star"></i>';
+                } else if (i === fullStars && hasHalfStar) {
+                    starsHTML += '<i class="fas fa-star-half-alt"></i>';
+                } else {
+                    starsHTML += '<i class="far fa-star"></i>';
+                }
+            }
+            
+            feedbackItem.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold text-pink-600">${name}</h4>
+                        <p class="text-sm text-gray-500">Tried: ${flavor}</p>
+                    </div>
+                    <div class="flex text-yellow-400">
+                        ${starsHTML}
+                    </div>
+                </div>
+                <p class="mt-2 text-gray-700">"${message}"</p>
+            `;
+            
+            // Add to top of feedback list
+            feedbackList.insertBefore(feedbackItem, feedbackList.firstChild);
+            
+            // Reset form
+            feedbackForm.reset();
+            stars.forEach(s => {
+                s.textContent = '☆';
+                s.classList.remove('text-yellow-400');
+            });
+            ratingInput.value = '0';
+            
+            // Show success message
+            alert('Thank you for your feedback!');
+        });
+        
+        // GSAP animations
+        gsap.registerPlugin(ScrollTrigger);
+        
+        // Animate elements on scroll
+        gsap.utils.toArray('.icecream-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none none"
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.8,
+                delay: i * 0.1
+            });
+        });
+
+
+
+        // Animate hero section elements
+        gsap.from('section#home h1', {
+            duration: 1,
+            y: -50,
+            opacity: 0,
+            ease: "power3.out"
+        });
+        
+        gsap.from('section#home h2', {
+            duration: 1,
+            y: -50,
+            opacity: 0,
+            delay: 0.3,
+            ease: "power3.out"
+        });
+        
+        gsap.from('section#home p', {
+            duration: 1,
+            y: 50,
+            opacity: 0,
+            delay: 0.6,
+            ease: "power3.out"
+        });
+        
+        gsap.from('section#home button', {
+            duration: 1,
+            y: 50,
+            opacity: 0,
+            delay: 0.9,
+            ease: "power3.out"
+        });
+        
+        gsap.from('section#home img', {
+            duration: 1,
+            x: 50,
+            opacity: 0,
+            delay: 0.6,
+            ease: "power3.out"
+        });
+        // Enhanced smooth scroll for 2-second duration
+function scrollToTarget(targetSelector, duration = 2000) {
+    const target = document.querySelector(targetSelector);
+    if (!target) return;
+
+    const start = window.pageYOffset;
+    const end = target.getBoundingClientRect().top + start;
+    const distance = end - start;
+    let startTime = null;
+
+    function animation(currentTime) {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const run = easeInOutQuad(timeElapsed, start, distance, duration);
+        window.scrollTo(0, run);
+        if (timeElapsed < duration) requestAnimationFrame(animation);
+    }
+
+    // Ease in-out function for smoothness
+    function easeInOutQuad(t, b, c, d) {
+        t /= d / 2;
+        if (t < 1) return c / 2 * t * t + b;
+        t--;
+        return -c / 2 * (t * (t - 2) - 1) + b;
+    }
+
+    requestAnimationFrame(animation);
+}
+
+// Intercept all anchor links with #
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        const target = document.querySelector(href);
+        if (target) {
+            e.preventDefault();
+            scrollToTarget(href, 2000); // 2 seconds
+        }
+    });
+});
+(() => {
+  const container = document.getElementById('pixel-container');
+  const dots = [];
+  const maxDots = 35;
+
+  document.addEventListener('mousemove', e => {
+    const dot = document.createElement('div');
+    dot.classList.add('pixel-dot');
+    dot.style.left = e.pageX + 'px';
+    dot.style.top = e.pageY + 'px';
+    container.appendChild(dot);
+    dots.push({ el: dot, life: 1.0 });
+
+    if (dots.length > maxDots) {
+      const old = dots.shift();
+      old.el.remove();
+    }
+  });
+
+  function animate() {
+    for (let i = dots.length - 1; i >= 0; i--) {
+      const d = dots[i];
+      d.life -= 0.025;
+      if (d.life <= 0) {
+        d.el.remove();
+        dots.splice(i, 1);
+      } else {
+        d.el.style.opacity = d.life;
+        const scale = d.life;
+        d.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+    </script>
+</body>
+</html>
